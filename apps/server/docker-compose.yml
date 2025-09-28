@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7.2-alpine
+    container_name: scalable-chat-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    environment:
+      - REDIS_PASSWORD=your_redis_password
+    command: redis-server --requirepass your_redis_password --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "your_redis_password", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  redis_data:
+    driver: local
