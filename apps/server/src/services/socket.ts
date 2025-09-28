@@ -10,5 +10,7 @@ class SocketService {
     }
     get io(){
         return this._io;
+    }
 }
+
 export default new SocketService();
