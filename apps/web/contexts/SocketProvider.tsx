@@ -34,10 +34,9 @@ export const SocketProvider: React.FC<SocketProviderProps> = ({ children }) => {
     [socket]
   );
 
-  const onMessageRec = useCallback((msg: string) => {
+  const onMessageRec = useCallback((msg: { message: string }) => {
     console.log("From Server Msg Rec", msg);
-    const { message } = JSON.parse(msg) as { message: string };
-    setMessages((prev) => [...prev, message]);
+    setMessages((prev) => [...prev, msg.message]);
   }, []);
 
   useEffect(() => {

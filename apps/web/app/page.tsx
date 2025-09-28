@@ -1,6 +1,6 @@
 "use client";
 import { useState } from "react";
-import { useSocket } from "../context/SocketProvide";
+import { useSocket } from "../contexts/SocketProvider";
 import classes from "./page.module.css";
 
 export default function Page() {
@@ -23,8 +23,8 @@ export default function Page() {
         </button>
       </div>
       <div>
-        {messages.map((e) => (
-          <li>{e}</li>
+        {messages.map((e, index) => (
+          <li key={`${index}-${e}`}>{e}</li>
         ))}
       </div>
     </div>
