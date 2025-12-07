@@ -14,9 +14,12 @@
         "typescript": "^5.9.2"
     },
     "dependencies": {
-        "@types/node": "^24.5.2",
+        "@prisma/client": "^6.18.0",
+        "@types/node": "^24.10.1",
         "ioredis": "^5.8.0",
+        "kafkajs": "^2.2.4",
         "socket.io": "^4.8.1",
-        "kafkajs": "^2.2.4"
+        "tsx": "^4.21.0",
+        "typescript": "^5.9.3"
     }
 }
