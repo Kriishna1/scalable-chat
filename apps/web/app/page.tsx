@@ -14,10 +14,12 @@ export default function Page() {
           onChange={(e) => setMessage(e.target.value)}
           className={classes["chat-input"]}
           placeholder="Message..."
+          suppressHydrationWarning
         />
         <button
           onClick={(e) => sendMessage(message)}
           className={classes["button"]}
+          suppressHydrationWarning
         >
           Send
         </button>
