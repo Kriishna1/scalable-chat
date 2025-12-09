@@ -1,6 +1,7 @@
 import { Server } from "socket.io";
 import { createRequire } from "module";
 import prismaClient from "./prisma.js";
+import { produceMessage } from "./kafka.js";
 
 const require = createRequire(import.meta.url);
 const Redis = require("ioredis");
@@ -62,14 +63,13 @@ class SocketService {
         // Emit to all connected sockets
         io.emit("message", JSON.parse(message));
         
+        // Produce message to Kafka
         try {
-          await prismaClient.message.create({
-            data: {
-              text: message
-            }
-          });
+          const parsedMessage = JSON.parse(message);
+          await produceMessage(parsedMessage.message);
+          console.log("Message produced to Kafka broker:", parsedMessage.message);
         } catch (error) {
-          console.error("Error saving message to database:", error);
+          console.error("Error producing message to Kafka:", error);
         }
       }
     });
