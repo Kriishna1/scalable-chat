@@ -1,135 +1,341 @@
-# Turborepo starter
+# Scalable Chat Application
 
-This Turborepo starter is maintained by the Turborepo core team.
+A horizontally scalable real-time chat application built with modern web technologies and distributed systems architecture.
 
-## Using this example
+## Architecture Overview
 
-Run the following command:
+This application demonstrates a scalable chat system using Redis pub/sub, Apache Kafka, PostgreSQL, and Socket.IO in a microservices architecture.
 
-```sh
-npx create-turbo@latest
+```mermaid
+graph TB
+    subgraph "Client Layer"
+        Client1[Web Client 1]
+        Client2[Web Client 2]
+        Client3[Web Client N]
+    end
+    
+    subgraph "Application Layer"
+        Server1[Socket.IO Server 1]
+        Server2[Socket.IO Server 2]
+        Server3[Socket.IO Server N]
+    end
+    
+    subgraph "Message Distribution"
+        Redis[(Redis Pub/Sub)]
+    end
+    
+    subgraph "Message Queue"
+        Kafka[(Apache Kafka)]
+    end
+    
+    subgraph "Data Layer"
+        Postgres[(PostgreSQL)]
+    end
+    
+    Client1 <-->|WebSocket| Server1
+    Client2 <-->|WebSocket| Server2
+    Client3 <-->|WebSocket| Server3
+    
+    Server1 <-->|Publish/Subscribe| Redis
+    Server2 <-->|Publish/Subscribe| Redis
+    Server3 <-->|Publish/Subscribe| Redis
+    
+    Server1 -->|Produce| Kafka
+    Server2 -->|Produce| Kafka
+    Server3 -->|Produce| Kafka
+    
+    Kafka -->|Consume| Server1
+    Server1 -->|Persist| Postgres
+    
+    style Client1 fill:#e1f5ff
+    style Client2 fill:#e1f5ff
+    style Client3 fill:#e1f5ff
+    style Redis fill:#ff6b6b
+    style Kafka fill:#4ecdc4
+    style Postgres fill:#45b7d1
 ```
 
-## What's inside?
+##  Message Flow Architecture
 
-This Turborepo includes the following packages/apps:
+```mermaid
+sequenceDiagram
+    participant Client
+    participant SocketIO as Socket.IO Server
+    participant Redis
+    participant Kafka
+    participant Consumer as Kafka Consumer
+    participant DB as PostgreSQL
+    participant OtherClients as Other Clients
 
-### Apps and Packages
-
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
-
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
-
-### Utilities
-
-This Turborepo has some additional tools already setup for you:
-
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build
-yarn dlx turbo build
-pnpm exec turbo build
+    Client->>SocketIO: Send Message (WebSocket)
+    SocketIO->>Redis: Publish to MESSAGES channel
+    Redis-->>SocketIO: Broadcast to all servers
+    SocketIO->>OtherClients: Emit via WebSocket
+    SocketIO->>Kafka: Produce to MESSAGES topic
+    Kafka->>Consumer: Consume message
+    Consumer->>DB: Persist message
+    
+    Note over Consumer,DB: On Error: Pause 60s
 ```
 
-You can build a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
+##  System Components
 
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo build --filter=docs
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo build --filter=docs
-yarn exec turbo build --filter=docs
-pnpm exec turbo build --filter=docs
-```
-
-### Develop
-
-To develop all apps and packages, run the following command:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev
-yarn exec turbo dev
-pnpm exec turbo dev
-```
-
-You can develop a specific package by using a [filter](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters):
-
-```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo dev --filter=web
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo dev --filter=web
-yarn exec turbo dev --filter=web
-pnpm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-```
-cd my-turborepo
-
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo login
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo login
-yarn exec turbo login
-pnpm exec turbo login
+```mermaid
+graph LR
+    subgraph "Frontend - Next.js"
+        UI[React Components]
+        Socket[Socket.IO Client]
+        Context[Context Providers]
+    end
+    
+    subgraph "Backend - Node.js"
+        API[Socket.IO Server]
+        RedisClient[Redis Client]
+        KafkaProducer[Kafka Producer]
+        KafkaConsumer[Kafka Consumer]
+        Prisma[Prisma ORM]
+    end
+    
+    subgraph "Infrastructure"
+        RedisServer[Redis<br/>Message Broker]
+        KafkaCluster[Kafka Cluster<br/>Aiven Cloud]
+        PostgresDB[PostgreSQL<br/>Aiven Cloud]
+    end
+    
+    UI --> Socket
+    Socket <--> API
+    API <--> RedisClient
+    API --> KafkaProducer
+    KafkaConsumer --> Prisma
+    
+    RedisClient <--> RedisServer
+    KafkaProducer --> KafkaCluster
+    KafkaConsumer <-- KafkaCluster
+    Prisma --> PostgresDB
+    
+    style RedisServer fill:#ff6b6b
+    style KafkaCluster fill:#4ecdc4
+    style PostgresDB fill:#45b7d1
 ```
 
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
+##  Key Features
 
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
+### Scalability
+- **Horizontal Scaling**: Multiple Socket.IO servers can run simultaneously
+- **Redis Pub/Sub**: Ensures message delivery across all server instances
+- **Kafka Message Queue**: Decouples message processing from real-time delivery
+- **Distributed Architecture**: Each component can scale independently
+
+### Reliability
+- **Message Persistence**: All messages stored in PostgreSQL via Kafka consumers
+- **Error Recovery**: Consumer auto-pauses on database errors (60s cooldown)
+- **Fault Tolerance**: Redis and Kafka provide message buffering
+
+### Real-time Communication
+- **WebSocket Connections**: Bi-directional communication via Socket.IO
+- **Instant Delivery**: Redis pub/sub for sub-millisecond message distribution
+- **Multi-server Support**: Clients connected to different servers see the same messages
+
+## 🛠️ Tech Stack
+
+### Frontend
+- **Next.js 15** - React framework with App Router
+- **Socket.IO Client** - WebSocket communication
+- **TypeScript** - Type safety
+
+### Backend
+- **Node.js** - Runtime environment
+- **Socket.IO** - Real-time bidirectional communication
+- **Redis** - In-memory pub/sub message broker
+- **Apache Kafka** - Distributed event streaming (Aiven Cloud)
+- **PostgreSQL** - Relational database (Aiven Cloud)
+- **Prisma** - Modern ORM for database operations
+
+### DevOps
+- **Docker** - Redis containerization
+- **Turborepo** - Monorepo build system
+- **TypeScript** - End-to-end type safety
+
+##  Project Structure
 
 ```
-# With [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation) installed (recommended)
-turbo link
-
-# Without [global `turbo`](https://turborepo.com/docs/getting-started/installation#global-installation), use your package manager
-npx turbo link
-yarn exec turbo link
-pnpm exec turbo link
+scalable-chat/
+├── apps/
+│   ├── web/                    # Next.js frontend
+│   │   ├── app/               # App router pages
+│   │   └── contexts/          # Socket context provider
+│   └── server/                # Backend server
+│       ├── src/
+│       │   ├── index.ts       # Entry point
+│       │   └── services/
+│       │       ├── socket.ts  # Socket.IO + Redis
+│       │       ├── kafka.ts   # Kafka producer/consumer
+│       │       └── prisma.ts  # Database client
+│       ├── prisma/
+│       │   └── schema.prisma  # Database schema
+│       └── docker-compose.yml # Redis container
+└── packages/
+    ├── ui/                    # Shared UI components
+    ├── eslint-config/         # ESLint configs
+    └── typescript-config/     # TypeScript configs
 ```
 
-## Useful Links
+##  Setup & Installation
 
-Learn more about the power of Turborepo:
+### Prerequisites
+- Node.js >= 18
+- Docker Desktop
+- Aiven account (for Kafka & PostgreSQL)
+- Yarn package manager
 
-- [Tasks](https://turborepo.com/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.com/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.com/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.com/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.com/docs/reference/configuration)
-- [CLI Usage](https://turborepo.com/docs/reference/command-line-reference)
+### Environment Variables
+
+Create `.env` in `apps/server/`:
+
+```env
+# Redis Configuration
+REDIS_HOST=localhost
+REDIS_PORT=6379
+REDIS_PASSWORD=redis123
+REDIS_DB=0
+
+# Server Configuration
+PORT=8000
+
+# PostgreSQL (Aiven)
+DATABASE_URL="postgresql://user:password@host:port/database?sslmode=require"
+
+# Kafka Configuration (Aiven)
+KAFKA_BROKER=kafka-xxxxx.aivencloud.com:12345
+KAFKA_USERNAME=avnadmin
+KAFKA_PASSWORD=your-kafka-password
+```
+
+### Installation Steps
+
+1. **Clone the repository**
+```bash
+git clone https://github.com/Kriishna1/scalable-chat.git
+cd scalable-chat
+```
+
+2. **Install dependencies**
+```bash
+yarn install
+```
+
+3. **Start Redis**
+```bash
+cd apps/server
+docker compose up -d
+```
+
+4. **Setup Aiven Services**
+   - Create Kafka service and download SSL certificate as `ca.pem`
+   - Create PostgreSQL service
+   - Update `.env` with connection details
+
+5. **Generate Prisma Client**
+```bash
+yarn workspace server prisma generate
+```
+
+6. **Run database migrations**
+```bash
+yarn workspace server prisma migrate dev
+```
+
+7. **Start development servers**
+```bash
+yarn dev
+```
+
+The application will be available at:
+- Frontend: `http://localhost:3000`
+- Backend: `http://localhost:8000`
+
+##  How It Works
+
+### Message Flow
+
+1. **Client sends message** → WebSocket to Socket.IO server
+2. **Server publishes to Redis** → All server instances receive the message
+3. **Broadcast to connected clients** → Real-time delivery via WebSocket
+4. **Produce to Kafka** → Message queued for persistence
+5. **Kafka consumer processes** → Message saved to PostgreSQL
+6. **Error handling** → Consumer pauses on DB errors, auto-resumes after 60s
+
+### Scaling Strategy
+
+```mermaid
+graph TB
+    subgraph "Load Balancer"
+        LB[NGINX/HAProxy]
+    end
+    
+    subgraph "Server Cluster"
+        S1[Server Instance 1]
+        S2[Server Instance 2]
+        S3[Server Instance 3]
+    end
+    
+    subgraph "Shared State"
+        R[Redis Pub/Sub]
+        K[Kafka Cluster]
+    end
+    
+    Users --> LB
+    LB --> S1
+    LB --> S2
+    LB --> S3
+    
+    S1 <--> R
+    S2 <--> R
+    S3 <--> R
+    
+    S1 --> K
+    S2 --> K
+    S3 --> K
+```
+
+##  Database Schema
+
+```prisma
+model Message {
+  id        String   @id @default(uuid())
+  text      String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("messages")
+}
+```
+
+##  Testing the Scalability
+
+1. Start multiple server instances on different ports
+2. Open multiple browser tabs
+3. Send messages from different tabs
+4. Verify all clients receive messages in real-time
+5. Check PostgreSQL for persisted messages
+
+##  Production Considerations
+
+- **Load Balancing**: Use NGINX or HAProxy with sticky sessions
+- **SSL/TLS**: Enable HTTPS for Socket.IO connections
+- **Environment Separation**: Use different Kafka topics per environment
+- **Monitoring**: Implement logging and metrics (Prometheus, Grafana)
+- **Auto-scaling**: Configure based on CPU/memory metrics
+- **Message Retention**: Configure Kafka retention policies
+- **Database Indexing**: Add indexes on frequently queried fields
+
+## Learn 
+
+- [Socket.IO Documentation](https://socket.io/docs/)
+- [Redis Pub/Sub](https://redis.io/docs/manual/pubsub/)
+- [Apache Kafka](https://kafka.apache.org/documentation/)
+- [Prisma ORM](https://www.prisma.io/docs)
+- [Next.js](https://nextjs.org/docs)
+- [Turborepo](https://turborepo.com/docs)
+
+
+
